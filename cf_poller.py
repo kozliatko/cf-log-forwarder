@@ -231,6 +231,31 @@ def cef_sev_to_syslog(cef_sev: int) -> int:
     return 2       # critical
 
 
+def truncate_cef_payload(payload: str, limit: int = 900) -> str:
+    """Truncate a CEF payload to `limit` characters on a field boundary.
+
+    Naive character truncation could split a key=value pair in half or
+    leave a dangling escape sequence (odd number of trailing backslashes),
+    producing malformed CEF downstream. This cuts back to the last field
+    separator (space) and strips dangling escapes so the result is always
+    syntactically valid CEF.
+    """
+    if len(payload) <= limit:
+        return payload
+    cut = payload[:limit]
+    # do not end inside an escape sequence (odd trailing backslashes)
+    if (len(cut) - len(cut.rstrip("\\"))) % 2 == 1:
+        cut = cut[:-1]
+    # cut back to the last complete field boundary
+    sp = cut.rfind(" ")
+    if sp > 0:
+        cut = cut[:sp]
+    # the second cut may have exposed a dangling escape again
+    if cut and (len(cut) - len(cut.rstrip("\\"))) % 2 == 1:
+        cut = cut[:-1]
+    return cut
+
+
 def build_cef_message(facility: int, tag: str, event_time: datetime,
                       signature_id: str, name: str, cef_sev: int,
                       ext: dict) -> str:
@@ -243,10 +268,7 @@ def build_cef_message(facility: int, tag: str, event_time: datetime,
         f"{cef_escape(signature_id)}|{cef_escape(name)}|{cef_sev}|"
     )
     body = " ".join(f"{k}={cef_escape(v)}" for k, v in ext.items())
-    payload = header + body
-    # keep UDP datagrams reasonably small (~900B payload)
-    if len(payload) > 900:
-        payload = payload[:897] + "..."
+    payload = truncate_cef_payload(header + body)
     return f"<{pri}>{ts} {SYSLOG_HOSTNAME} {tag}: {payload}"
 
 

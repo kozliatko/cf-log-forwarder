@@ -183,6 +183,23 @@ python3 cf_explore.py --dataset requests --host example.com --csv
 python3 cf_explore.py --dataset dns --code NXDOMAIN --json
 ```
 
+## Development
+
+Run the test suite locally:
+
+```bash
+pip install pytest "requests>=2.32.4"
+pytest tests/ -v
+```
+
+CI (`.github/workflows/ci.yml`) runs the tests on every push/PR to
+`main` and, on green tests, builds and publishes the Docker image to
+GHCR:
+
+```bash
+docker pull ghcr.io/kozliatko/cf-log-forwarder:latest
+```
+
 ## State / backfill
 
 The cursor state is a JSON file mapping each source key to the timestamp
