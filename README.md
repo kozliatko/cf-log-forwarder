@@ -1,4 +1,4 @@
-# cf-poller
+# cf-log-forwarder
 
 A read-only Python poller that fetches logs from the Cloudflare API and
 forwards them to a syslog server in **CEF format** (UDP) or emits them as
