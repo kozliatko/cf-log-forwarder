@@ -1,9 +1,15 @@
 # cf-log-forwarder
 
 [![Security](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/security.yml/badge.svg)](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/security.yml)
+[![CI](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/ci.yml/badge.svg)](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/codeql.yml/badge.svg)](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kozliatko/cf-log-forwarder/badge)](https://scorecard.dev/viewer/?uri=github.com/kozliatko/cf-log-forwarder)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/github/license/kozliatko/cf-log-forwarder)
+![Version](https://img.shields.io/github/v/release/kozliatko/cf-log-forwarder)
+![Last commit](https://img.shields.io/github/last-commit/kozliatko/cf-log-forwarder)
+![Issues](https://img.shields.io/github/issues/kozliatko/cf-log-forwarder)
 
 A read-only Python poller that fetches logs from the Cloudflare API and
 forwards them to a syslog server in **CEF format** (UDP) or emits them as
