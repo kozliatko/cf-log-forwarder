@@ -156,6 +156,12 @@ docker compose run --rm cf-poller --dry-run
 The `.env` file is **not baked into the image** - it is injected via
 `env_file` at runtime. The cursor state persists in `./data/` on the host.
 
+The image includes a `HEALTHCHECK` based on state-file freshness: the
+poller writes its cursor state after every daemon cycle, so a stale state
+file (older than 2x `CF_POLL_INTERVAL`, min 10 minutes) marks the
+container as unhealthy - a hung loop is detected without any extra
+tooling inside the container.
+
 > **Note:** inside a container `localhost` is the container itself -
 > `SYSLOG_HOST` must point to the syslog server's IP address.
 
