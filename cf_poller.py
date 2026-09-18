@@ -96,7 +96,11 @@ MAX_PAGES = 20
 # Configuration
 # =====================================================================
 def parse_env_file(path: "Path") -> dict:
-    """Simple .env parser - KEY=VALUE lines, # comments, quotes stripped."""
+    """Simple .env parser - KEY=VALUE lines, # comments, quotes stripped.
+
+    An inline '#' only starts a comment when preceded by whitespace, so
+    values containing '#' (e.g. passwords/tokens) are not truncated.
+    """
     values = {}
     if not path.exists():
         return values
@@ -106,9 +110,13 @@ def parse_env_file(path: "Path") -> dict:
             continue
         key, _, value = line.partition("=")
         key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if not (value.startswith('"') or value.startswith("'")):
-            value = value.split("#")[0].strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            # quoted value - keep the content intact (no comment stripping)
+            value = value[1:-1].strip()
+        elif " #" in value:
+            # unquoted value - an inline '#' preceded by whitespace starts a comment
+            value = value.split(" #")[0].rstrip()
         if key:
             values[key] = value
     return values
@@ -203,8 +211,14 @@ def save_state_atomic(state: dict) -> None:
 # Syslog / CEF
 # =====================================================================
 def cef_escape(value) -> str:
-    """Escape a value for a CEF extension field (backslash, |, =)."""
+    """Escape a value for a CEF extension field.
+
+    Sanitizes control characters (newline, tab, etc.) to prevent syslog
+    framing violations and log injection, then escapes CEF-reserved
+    characters (backslash, |, =).
+    """
     s = "" if value is None else str(value)
+    s = "".join(" " if ord(ch) < 0x20 or ord(ch) == 0x7F else ch for ch in s)
     return s.replace("\\", "\\\\").replace("|", "\\|").replace("=", "\\=")
 
 

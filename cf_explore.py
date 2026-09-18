@@ -53,7 +53,11 @@ DATASETS = ("audit", "security", "requests", "dns")
 
 
 def parse_env_file(path: Path) -> dict[str, str]:
-    """Simple .env file parser (no python-dotenv dependency)."""
+    """Simple .env file parser (no python-dotenv dependency).
+
+    An inline '#' only starts a comment when preceded by whitespace, so
+    values containing '#' (e.g. passwords/tokens) are not truncated.
+    """
     values: dict[str, str] = {}
     if not path.exists():
         return values
@@ -63,9 +67,13 @@ def parse_env_file(path: Path) -> dict[str, str]:
             continue
         key, _, value = line.partition("=")
         key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if not (value.startswith('"') or value.startswith("'")):
-            value = value.split("#")[0].strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            # quoted value - keep the content intact (no comment stripping)
+            value = value[1:-1].strip()
+        elif " #" in value:
+            # unquoted value - an inline '#' preceded by whitespace starts a comment
+            value = value.split(" #")[0].rstrip()
         if key:
             values[key] = value
     return values
