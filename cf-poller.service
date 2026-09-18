@@ -1,0 +1,26 @@
+[Unit]
+Description=Cloudflare Log Poller (syslog CEF forwarder)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust the path to where the script is deployed (recommended: /opt/cf-poller/)
+ExecStart=/usr/bin/python3 /opt/cf-poller/cf_poller.py --daemon
+Restart=on-failure
+RestartSec=10s
+
+# The script reads its own .env; alternatively add Environment here:
+# Environment=SYSLOG_HOST=10.0.0.5
+
+# Poller logs to journald, stdout/stderr kept separate
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cf-poller
+
+# Restart on crash; never allow more than one instance
+Nice=10
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

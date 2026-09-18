@@ -1,0 +1,17 @@
+# Secrets - NEVER commit
+.env
+data.txt
+
+# Runtime state
+cf_poller_state.json
+data/
+.*/data/
+
+# Python
+__pycache__/
+*.pyc
+*.py~
+
+# OS / editor
+.DS_Store
+*~

@@ -1,0 +1,30 @@
+# ============================================================
+# Cloudflare syslog poller
+#   start:       docker compose up -d
+#   logs:        docker compose logs -f cf-poller
+#   one-shot:    docker compose run --rm cf-poller --dry-run
+#
+# Configuration is read from the .env file (env_file below).
+# Docker Compose injects .env entries directly as environment
+# variables, which take priority over .env parsing in the script.
+# ============================================================
+services:
+  cf-poller:
+    build: .
+    image: cf-poller:latest
+    container_name: cf-poller
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # state persists outside the container
+      STATE_FILE: /data/cf_poller_state.json
+      # override as needed (e.g. syslog on the host):
+      # SYSLOG_HOST: 192.168.1.10
+    volumes:
+      - ./data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
