@@ -4,6 +4,34 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.1] - 2026-09-18
+
+### Added
+- Docker `HEALTHCHECK` based on state-file freshness (detects a hung
+  daemon loop without extra tooling in the container).
+- Unit test suite (50 tests): CEF escaping, payload truncation, message
+  building, severity mappings, mappers, atomic state handling, emitters.
+- CI pipeline (GitHub Actions): unit tests on push/PR to `main`;
+  on green tests the Docker image is built and published to GHCR
+  (tags: `latest`, `sha-<commit>`, and `x.y.z` for `v*` release tags).
+- `cf_explore.py` - unified read-only dataset explorer
+  (`--dataset audit|security|requests|dns`) replacing four separate
+  demo scripts.
+
+### Changed
+- Dockerfile pins `requests>=2.32.4` (CVE-2024-35195, CVE-2024-47081).
+
+### Fixed
+- CEF payload truncation no longer splits `key=value` pairs or leaves
+  dangling escape sequences - oversized messages are cut on a field
+  boundary and remain syntactically valid CEF.
+- `cef_escape` strips control characters (newline, tab, DEL, other
+  bytes < 0x20) before escaping, preventing syslog framing violations
+  and log injection via API-provided fields.
+- `.env` parser: an inline `#` only starts a comment when preceded by
+  whitespace, so values containing `#` are no longer silently
+  truncated; quoted values are kept intact.
+
 ## [2.0.0] - 2026-09-18
 
 ### Added
