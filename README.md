@@ -1,5 +1,10 @@
 # cf-log-forwarder
 
+[![Security](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/security.yml/badge.svg)](https://github.com/kozliatko/cf-log-forwarder/actions/workflows/security.yml)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 A read-only Python poller that fetches logs from the Cloudflare API and
 forwards them to a syslog server in **CEF format** (UDP) or emits them as
 **JSON lines** for any log pipeline.
