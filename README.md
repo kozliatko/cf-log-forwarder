@@ -160,16 +160,16 @@ The `.env` file is **not baked into the image** - it is injected via
 */5 * * * * cd /opt/cf-poller && /usr/bin/python3 cf_poller.py >> /var/log/cf_poller.log 2>&1
 ```
 
-## Demo scripts
+## Exploring datasets
 
-Standalone read-only scripts for exploring each dataset interactively
-(table / CSV / JSON output to the console):
+`cf_explore.py` is a standalone read-only tool for inspecting each dataset
+interactively (table / CSV / JSON output to the console):
 
-```
-cf_audit_demo.py      # audit logs
-cf_security_demo.py   # firewall/WAF events
-cf_requests_demo.py   # HTTP requests
-cf_dns_demo.py        # DNS analytics
+```bash
+python3 cf_explore.py --dataset audit                      # audit logs
+python3 cf_explore.py --dataset security --action block    # WAF events
+python3 cf_explore.py --dataset requests --host example.com --csv
+python3 cf_explore.py --dataset dns --code NXDOMAIN --json
 ```
 
 ## State / backfill

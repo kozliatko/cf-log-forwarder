@@ -4,7 +4,7 @@ cf_poller_state.json
 __pycache__/
 *.pyc
 *.py~
-cf_*_demo.py
+cf_explore.py
 cf-poller.service
 *.md
 .git/
