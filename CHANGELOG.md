@@ -4,6 +4,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.2] - 2026-09-21
+
+### Fixed
+- Docker deployment: the atomic state save created its temp file in the
+  script directory while the target state file lives on a bind-mounted
+  volume - `os.replace()` across filesystems fails with EXDEV, crashing
+  the daemon into a restart loop with repeated 24h data refetch. The
+  temp file is now created in the state file's directory (and missing
+  parent directories are created).
+- Docker deployment: bind-mounted `./data` is not writable by the
+  container's unprivileged user (UID mismatch) - replaced with a named
+  volume that inherits ownership from the image.
+- A zero or negative `CF_POLL_INTERVAL` would turn the daemon into a
+  hot loop continuously calling the Cloudflare API (rate-limit ban,
+  log flooding) - the interval is now floored at 30 seconds.
+
+### Added
+- Fail-fast configuration validation: syslog facility (0-23) and port
+  (1-65535) ranges are checked at startup with explicit error messages.
+- Docker Compose runtime hardening: `no-new-privileges`, `cap_drop: ALL`,
+  read-only root filesystem with a tmpfs `/tmp`.
+
+### Changed
+- New tests covering all the above (56 total).
+
 ## [2.0.1] - 2026-09-18
 
 ### Added

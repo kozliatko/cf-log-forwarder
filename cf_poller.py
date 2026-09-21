@@ -145,10 +145,28 @@ SYSLOG_PORT = cfg_int("SYSLOG_PORT", 514)
 SYSLOG_HOSTNAME = cfg("SYSLOG_HOSTNAME") or socket.gethostname()
 DEFAULT_LOOKBACK_HOURS = cfg_int("DEFAULT_LOOKBACK_HOURS", 24)
 QUERY_LIMIT = cfg_int("QUERY_LIMIT", 500)
-POLL_INTERVAL = cfg_int("CF_POLL_INTERVAL", 300)
+# clamp: a zero/negative interval would turn the daemon into a hot loop
+# continuously hammering the Cloudflare API (rate-limit ban, log flooding)
+POLL_INTERVAL = max(30, cfg_int("CF_POLL_INTERVAL", 300))
 ZONE_IDS_CFG = [z.strip() for z in cfg("CF_ZONE_IDS").split(",") if z.strip()]
 OUTPUT = cfg("OUTPUT", "cef").lower()  # cef | jsonl | both
 STATE_FILE = SCRIPT_DIR / (cfg("STATE_FILE") or "cf_poller_state.json")
+
+
+def validate_config() -> None:
+    """Fail fast on configuration values that would produce invalid
+    syslog output (PRI out of range) or unusable sockets."""
+    errors = []
+    if not (1 <= SYSLOG_PORT <= 65535):
+        errors.append(f"SYSLOG_PORT={SYSLOG_PORT} must be in range 1-65535")
+    for key in FACILITY_KEYS.values():
+        val = cfg_int(key, 16)
+        if not (0 <= val <= 23):
+            errors.append(f"{key}={val} must be in range 0-23 (RFC 3162 facility)")
+    if errors:
+        for err in errors:
+            print(f"CONFIG ERROR: {err}", file=sys.stderr)
+        sys.exit(2)
 
 
 # =====================================================================
@@ -191,9 +209,16 @@ def load_state() -> dict:
 
 
 def save_state_atomic(state: dict) -> None:
-    """Atomic write: temp file + rename (crash-safe)."""
+    """Atomic write: temp file + rename (crash-safe).
+
+    The temp file is created in the target directory so that
+    os.replace() never crosses a filesystem boundary (EXDEV error) -
+    e.g. when STATE_FILE points to a bind-mounted volume while the
+    script directory is on the container overlay filesystem.
+    """
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_path = tempfile.mkstemp(
-        prefix=".cf_poller_state-", suffix=".tmp", dir=str(SCRIPT_DIR)
+        prefix=".cf_poller_state-", suffix=".tmp", dir=str(STATE_FILE.parent)
     )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -745,6 +770,8 @@ def main() -> None:
 
     if not API_TOKEN or not ACCOUNT_ID:
         sys.exit("Missing credentials - check .env (CF_API_TOKEN, CF_ACCOUNT_ID)")
+
+    validate_config()
 
     if args.stdout:
         OUTPUT = "jsonl"

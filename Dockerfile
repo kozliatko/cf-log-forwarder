@@ -6,7 +6,7 @@
 FROM python:3.12-slim
 
 LABEL description="Cloudflare -> syslog CEF log poller" \
-      version="2.0.1"
+      version="2.0.2"
 
 # Dependencies (pinned to a CVE-free release, see GHSA for 2.31.x)
 RUN pip install --no-cache-dir "requests>=2.32.4"

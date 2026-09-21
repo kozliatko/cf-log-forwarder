@@ -289,3 +289,63 @@ class TestTimeHelpers:
     def test_iso_now_format(self):
         assert cp.iso_now().endswith("Z")
         assert len(cp.iso_now()) == 20
+
+
+# =====================================================================
+# security audit fixes (v2.0.2)
+# =====================================================================
+class TestSaveStateParentDir:
+    def test_save_creates_missing_parent_dir(self, tmp_path, monkeypatch):
+        """F1: state dir may not exist (e.g. first run in a fresh volume)."""
+        deep = tmp_path / "a" / "b" / "c"
+        monkeypatch.setattr(cp, "STATE_FILE", deep / "state.json")
+        cp.save_state_atomic({"a": {"last": "x"}})
+        assert cp.load_state() == {"a": {"last": "x"}}
+
+    def test_temp_file_in_target_dir(self, tmp_path, monkeypatch):
+        """F1: temp file must live in the STATE_FILE directory so that
+        os.replace() cannot cross a filesystem boundary (EXDEV)."""
+        target_dir = tmp_path / "data"
+        monkeypatch.setattr(cp, "STATE_FILE", target_dir / "state.json")
+        cp.save_state_atomic({"a": {"last": "x"}})
+        # no leftovers anywhere else (simulates /app vs /data)
+        leftovers = list(tmp_path.rglob(".cf_poller_state-*"))
+        assert leftovers == []
+
+
+class TestPollIntervalClamp:
+    def test_interval_floors_at_30(self):
+        """F4: zero/negative configured interval would create a hot loop."""
+        assert hasattr(cp, "POLL_INTERVAL")
+        assert cp.POLL_INTERVAL >= 30
+
+
+class TestValidateConfig:
+    def test_valid_defaults_pass(self, monkeypatch, capsys):
+        monkeypatch.setattr(cp, "SYSLOG_PORT", 514)
+        for key in ("FACILITY_AUDIT", "FACILITY_ZT_ACCESS", "FACILITY_SECURITY",
+                    "FACILITY_REQUESTS", "FACILITY_DNS"):
+            monkeypatch.delenv(key, raising=False)
+        monkeypatch.setattr(cp, "_ENV", {})
+        cp.validate_config()  # must not raise/exit
+
+    def test_invalid_port_fails(self, monkeypatch, capsys):
+        monkeypatch.setattr(cp, "SYSLOG_PORT", 70000)
+        monkeypatch.setattr(cp, "_ENV", {})
+        for key in ("FACILITY_AUDIT", "FACILITY_ZT_ACCESS", "FACILITY_SECURITY",
+                    "FACILITY_REQUESTS", "FACILITY_DNS"):
+            monkeypatch.delenv(key, raising=False)
+        with pytest.raises(SystemExit) as exc:
+            cp.validate_config()
+        assert exc.value.code == 2
+        assert "SYSLOG_PORT" in capsys.readouterr().err
+
+    def test_invalid_facility_fails(self, monkeypatch, capsys):
+        monkeypatch.setattr(cp, "SYSLOG_PORT", 514)
+        monkeypatch.setattr(cp, "_ENV", {"FACILITY_DNS": "99"})
+        for key in ("FACILITY_AUDIT", "FACILITY_ZT_ACCESS", "FACILITY_SECURITY",
+                    "FACILITY_REQUESTS"):
+            monkeypatch.delenv(key, raising=False)
+        with pytest.raises(SystemExit):
+            cp.validate_config()
+        assert "FACILITY_DNS" in capsys.readouterr().err

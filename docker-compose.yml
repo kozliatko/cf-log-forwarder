@@ -17,14 +17,27 @@ services:
     env_file:
       - .env
     environment:
-      # state persists outside the container
+      # state persists in a named volume (inherits ownership from the
+      # image, where /data is chowned to the container user)
       STATE_FILE: /data/cf_poller_state.json
       # override as needed (e.g. syslog on the host):
       # SYSLOG_HOST: 192.168.1.10
     volumes:
-      - ./data:/data
+      - cf-poller-data:/data
+    # runtime hardening: poller is an outbound-only client, it does not
+    # need privileges, a writable root filesystem or /tmp persistence
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  cf-poller-data:
