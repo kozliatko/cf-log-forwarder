@@ -3,7 +3,7 @@
 # Build:  docker build -t cf-poller .
 # Run:    docker compose up -d
 # ============================================================
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 LABEL description="Cloudflare -> syslog CEF log poller" \
       version="2.0.2"
